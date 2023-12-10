@@ -1,3 +1,38 @@
+#!/bin/bash
+# Проверка наличия утилиты для обновления пакетов
+if command -v apt-get &> /dev/null; then
+    # Обновление для систем с apt
+    sudo apt-get update
+    available_updates=$(sudo apt-get --just-print upgrade | grep -c "upgraded")
+    current_version=$(lsb_release -r -s)
+elif command -v yum &> /dev/null; then
+    # Обновление для систем с yum
+    sudo yum check-update
+    available_updates=$(sudo yum list updates | grep -c "updates")
+    current_version=$(rpm -q --queryformat '%{VERSION}' astra-release)
+else
+    echo "Не удалось определить пакетный менеджер на вашей системе."
+    exit 1
+fi
+
+echo "Текущая версия ОС: $current_version"
+
+if [ "$available_updates" -gt 0 ]; then
+    echo "Доступны обновления. Желаете обновить систему? (y/n)"
+    read -r choice
+    if [ "$choice" == "y" ]; then
+        if command -v apt-get &> /dev/null; then
+            sudo apt-get upgrade -y
+        elif command -v yum &> /dev/null; then
+            sudo yum update -y
+        fi
+        echo "Обновление завершено."
+    else
+        echo "Обновление отменено."
+    fi
+else
+    echo "Обновлений нет."
+fi
 # IPv6 довольно молодой и дырявый протокол, лишних проблем с его настройками нам не надо, как и лишних угроз.
 # Проверка ядра
 [ -f /proc/net/if_inet6 ] && echo 'IPv6 ready system!'
